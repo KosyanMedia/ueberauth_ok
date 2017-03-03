@@ -4,6 +4,7 @@ defmodule Ueberauth.Strategy.Ok do
   """
 
   use Ueberauth.Strategy, default_scope: "GET_EMAIL"
+  alias Ueberauth.Auth.Info
 
   def handle_request!(conn) do
     scopes = conn.params["scope"] || option(conn, :default_scope)
@@ -30,6 +31,17 @@ defmodule Ueberauth.Strategy.Ok do
     set_errors!(conn, [error("missing_code", "No code received")])
   end
 
+  def info(conn) do
+    user = conn.private.ok_user
+    %Info{
+      email: user["email"],
+      first_name: user["first_name"],
+      image: user["pic_3"] || user["pic_2"] || user["pic_1"],
+      last_name: user["first_name"],
+      name: user["name"]
+    }
+  end
+
   defp with_optional(opts, key, conn) do
     if option(conn, key), do: Keyword.put(opts, key, option(conn, key)), else: opts
   end
@@ -39,10 +51,8 @@ defmodule Ueberauth.Strategy.Ok do
   end
 
   defp fetch_user(conn, token) do
-    IO.inspect token
     conn = put_private(conn, :ok_token, token)
-    # TODO: look at README.md
-    case Ueberauth.Strategy.Ok.OAuth.get(token, "") do
+    case Ueberauth.Strategy.Ok.OAuth.get(conn, token) do
       {:ok, %OAuth2.Response{status_code: 401, body: _body}} ->
         set_errors!(conn, [error("token", "unauthorized")])
       {:ok, %OAuth2.Response{status_code: status_code, body: user}} when status_code in 200..399 ->

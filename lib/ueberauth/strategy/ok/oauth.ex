@@ -26,13 +26,6 @@ defmodule Ueberauth.Strategy.Ok.OAuth do
     OAuth2.Strategy.AuthCode.authorize_url(client, params)
   end
 
-  def get(token, url) do
-    [token: token]
-    |> client
-    |> put_param("client_secret", client().client_secret)
-    |> OAuth2.Client.get(url)
-  end
-
   def get_token!(params \\ [], opts \\ []) do
     client =
       opts
@@ -46,4 +39,29 @@ defmodule Ueberauth.Strategy.Ok.OAuth do
     |> put_header("Accept", "application/json")
     |> OAuth2.Strategy.AuthCode.get_token(params, headers)
   end
+
+  def get(conn, token) do
+    OAuth2.Client.get(client, "https://api.ok.ru/fb.do?#{user_query(conn, token)}")
+  end
+
+  defp user_query(conn, token) do
+    access_token = Map.fetch!(token, :access_token)
+    config = Application.get_env(:ueberauth, Ueberauth.Strategy.Ok.OAuth)
+    client_public = Keyword.get(config, :client_public)
+    client_secret = Keyword.get(config, :client_secret)
+    URI.encode_query(%{
+      application_key: client_public,
+      format: "json",
+      method: "users.getCurrentUser",
+      access_token: access_token,
+      sig: sig(access_token, client_public, client_secret)
+    })
+  end
+
+  defp sig(access_token, client_public, client_secret) do
+    secret_key = md5(access_token <> client_secret)
+    md5("application_key=#{client_public}format=jsonmethod=users.getCurrentUser#{secret_key}")
+  end
+
+  defp md5(str), do: str |> :crypto.md5 |> Base.encode16 |> String.downcase
 end

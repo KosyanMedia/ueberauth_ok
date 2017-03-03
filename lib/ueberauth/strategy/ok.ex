@@ -33,12 +33,17 @@ defmodule Ueberauth.Strategy.Ok do
 
   def info(conn) do
     user = conn.private.ok_user
+    city = if user["location"]["city"], do: user["location"]["city"] <> ", "
     %Info{
       email: user["email"],
       first_name: user["first_name"],
       image: user["pic_3"] || user["pic_2"] || user["pic_1"],
-      last_name: user["first_name"],
-      name: user["name"]
+      last_name: user["last_name"],
+      name: user["name"],
+      location: "#{city}#{user["location"]["country"]}",
+      urls: %{
+        ok: "https://ok.ru/profile/#{user["uid"]}"
+      }
     }
   end
 

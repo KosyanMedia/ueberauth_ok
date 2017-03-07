@@ -1,7 +1,7 @@
 defmodule UeberauthOk.Mixfile do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.1.1"
   @url "https://github.com/KosyanMedia/ueberauth_ok"
 
   def project do

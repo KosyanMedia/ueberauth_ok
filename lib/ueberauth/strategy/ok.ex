@@ -3,7 +3,10 @@ defmodule Ueberauth.Strategy.Ok do
   ok.ru Strategy for Überauth.
   """
 
-  use Ueberauth.Strategy, default_scope: "GET_EMAIL"
+  use Ueberauth.Strategy, default_scope: "GET_EMAIL", uid_field: :uid
+
+  alias Ueberauth.Auth.Credentials
+  alias Ueberauth.Auth.Extra
   alias Ueberauth.Auth.Info
 
   def handle_request!(conn) do
@@ -44,6 +47,32 @@ defmodule Ueberauth.Strategy.Ok do
       urls: %{
         ok: "https://ok.ru/profile/#{user["uid"]}"
       }
+    }
+  end
+
+  def uid(conn) do
+    uid_field =
+      conn
+      |> option(:uid_field)
+      |> to_string
+    conn.private.ok_user[uid_field]
+  end
+
+  def extra(conn) do
+    %Extra{
+      raw_info: %{
+        token: conn.private.ok_token,
+        user: conn.private.ok_user
+      }
+    }
+  end
+
+  def credentials(conn) do
+    token = conn.private.ok_token
+    %Credentials{
+      expires: !!token.expires_at,
+      expires_at: token.expires_at,
+      token: token.access_token
     }
   end
 

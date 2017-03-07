@@ -8,13 +8,16 @@ defmodule UeberauthOk.Mixfile do
     [
       app: :ueberauth_ok,
       version: @version,
+      name: "Ueberauth Ok.ru Strategy",
       elixir: "~> 1.3",
       source_url: @url,
       package: package(),
       homepage_url: @url,
       build_embedded: Mix.env == :prod,
       start_permanent: Mix.env == :prod,
-      deps: deps()
+      description: description(),
+      deps: deps(),
+      docs: docs()
    ]
   end
 
@@ -25,8 +28,17 @@ defmodule UeberauthOk.Mixfile do
   defp deps do
     [
       {:ueberauth, "~> 0.4"},
-      {:oauth2, "~> 0.8.0"}
+      {:oauth2, "~> 0.8.0"},
+      {:ex_doc, "~> 0.3", only: :dev}
     ]
+  end
+
+  defp docs do
+    [extras: ["README.md"]]
+  end
+
+  defp description do
+    "An Uberauth strategy for Ok.ru authentication."
   end
 
   defp package do

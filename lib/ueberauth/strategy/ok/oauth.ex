@@ -63,5 +63,5 @@ defmodule Ueberauth.Strategy.Ok.OAuth do
     md5("application_key=#{client_public}format=jsonmethod=users.getCurrentUser#{secret_key}")
   end
 
-  defp md5(str), do: str |> :crypto.md5 |> Base.encode16 |> String.downcase
+  defp md5(str), do: :crypto.hash(:md5, str) |> Base.encode16(case: :lower)
 end

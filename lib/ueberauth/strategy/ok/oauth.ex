@@ -10,10 +10,12 @@ defmodule Ueberauth.Strategy.Ok.OAuth do
 
   def client(opts \\ []) do
     config = Application.get_env(:ueberauth, Ueberauth.Strategy.Ok.OAuth)
+
     opts =
       @defaults
       |> Keyword.merge(config)
       |> Keyword.merge(opts)
+
     OAuth2.Client.new(opts)
   end
 
@@ -22,6 +24,7 @@ defmodule Ueberauth.Strategy.Ok.OAuth do
     |> client
     |> OAuth2.Client.authorize_url!(params)
   end
+
   def authorize_url(client, params) do
     OAuth2.Strategy.AuthCode.authorize_url(client, params)
   end
@@ -31,8 +34,10 @@ defmodule Ueberauth.Strategy.Ok.OAuth do
       opts
       |> client
       |> OAuth2.Client.get_token!(params)
+
     client.token
   end
+
   def get_token(client, params, headers) do
     client
     |> put_param("client_secret", client.client_secret)
@@ -41,14 +46,15 @@ defmodule Ueberauth.Strategy.Ok.OAuth do
   end
 
   def get(conn, token) do
-    OAuth2.Client.get(client, "https://api.ok.ru/fb.do?#{user_query(conn, token)}")
+    OAuth2.Client.get(client(), "https://api.ok.ru/fb.do?#{user_query(conn, token)}")
   end
 
-  defp user_query(conn, token) do
+  defp user_query(_conn, token) do
     access_token = Map.fetch!(token, :access_token)
     config = Application.get_env(:ueberauth, Ueberauth.Strategy.Ok.OAuth)
     client_public = Keyword.get(config, :client_public)
     client_secret = Keyword.get(config, :client_secret)
+
     URI.encode_query(%{
       application_key: client_public,
       format: "json",

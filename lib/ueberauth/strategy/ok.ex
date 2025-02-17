@@ -11,12 +11,14 @@ defmodule Ueberauth.Strategy.Ok do
 
   def handle_request!(conn) do
     scopes = conn.params["scope"] || option(conn, :default_scope)
+
     opts =
       [scope: scopes]
       |> with_optional(:layout, conn)
       |> with_optional(:state, conn)
       |> Keyword.put(:response_type, "code")
       |> Keyword.put(:redirect_uri, callback_url(conn))
+
     redirect!(conn, Ueberauth.Strategy.Ok.OAuth.authorize_url!(opts))
   end
 
@@ -25,7 +27,9 @@ defmodule Ueberauth.Strategy.Ok do
     token = Ueberauth.Strategy.Ok.OAuth.get_token!([code: code], opts)
 
     if token.access_token == nil do
-      set_errors!(conn, [error(token.other_params["error"], token.other_params["error_description"])])
+      set_errors!(conn, [
+        error(token.other_params["error"], token.other_params["error_description"])
+      ])
     else
       fetch_user(conn, token)
     end
@@ -35,7 +39,6 @@ defmodule Ueberauth.Strategy.Ok do
   Handles the callback from app with access_token.
   """
   def handle_callback!(%Plug.Conn{params: %{"access_token" => access_token}} = conn) do
-    client = Ueberauth.Strategy.Ok.OAuth.client
     token = OAuth2.AccessToken.new(access_token)
     fetch_user(conn, token)
   end
@@ -47,6 +50,7 @@ defmodule Ueberauth.Strategy.Ok do
   def info(conn) do
     user = conn.private.ok_user
     city = if user["location"]["city"], do: user["location"]["city"] <> ", "
+
     %Info{
       email: user["email"],
       first_name: user["first_name"],
@@ -65,6 +69,7 @@ defmodule Ueberauth.Strategy.Ok do
       conn
       |> option(:uid_field)
       |> to_string
+
     conn.private.ok_user[uid_field]
   end
 
@@ -79,6 +84,7 @@ defmodule Ueberauth.Strategy.Ok do
 
   def credentials(conn) do
     token = conn.private.ok_token
+
     %Credentials{
       expires: !!token.expires_at,
       expires_at: token.expires_at,
@@ -96,11 +102,15 @@ defmodule Ueberauth.Strategy.Ok do
 
   defp fetch_user(conn, token) do
     conn = put_private(conn, :ok_token, token)
+
     case Ueberauth.Strategy.Ok.OAuth.get(conn, token) do
       {:ok, %OAuth2.Response{status_code: 401, body: _body}} ->
         set_errors!(conn, [error("token", "unauthorized")])
-      {:ok, %OAuth2.Response{status_code: status_code, body: user}} when status_code in 200..399 ->
+
+      {:ok, %OAuth2.Response{status_code: status_code, body: user}}
+      when status_code in 200..399 ->
         put_private(conn, :ok_user, user)
+
       {:error, %OAuth2.Error{reason: reason}} ->
         set_errors!(conn, [error("OAuth2", reason)])
     end
